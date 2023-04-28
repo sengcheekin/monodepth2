@@ -104,6 +104,9 @@ def test_simple(args):
         # Only testing on a single image
         paths = [args.image_path]
         output_directory = os.path.dirname(args.image_path)
+        # output_directory = os.path.join(os.path.dirname(os.path.dirname(args.image_path)), "results")
+        # output_directory = os.path.join(os.getcwd(), "results")
+
     elif os.path.isdir(args.image_path):
         # Searching folder for images
         paths = glob.glob(os.path.join(args.image_path, '*.{}'.format(args.ext)))
@@ -117,7 +120,7 @@ def test_simple(args):
     with torch.no_grad():
         for idx, image_path in enumerate(paths):
 
-            if image_path.endswith("_disp.jpg"):
+            if image_path.endswith("_depth.jpg"):
                 # don't try to predict disparity for a disparity image!
                 continue
 
@@ -147,15 +150,21 @@ def test_simple(args):
                 name_dest_npy = os.path.join(output_directory, "{}_disp.npy".format(output_name))
                 np.save(name_dest_npy, scaled_disp.cpu().numpy())
 
-            # Saving colormapped depth image
-            disp_resized_np = disp_resized.squeeze().cpu().numpy()
-            vmax = np.percentile(disp_resized_np, 95)
-            normalizer = mpl.colors.Normalize(vmin=disp_resized_np.min(), vmax=vmax)
-            mapper = cm.ScalarMappable(norm=normalizer, cmap='magma')
-            colormapped_im = (mapper.to_rgba(disp_resized_np)[:, :, :3] * 255).astype(np.uint8)
-            im = pil.fromarray(colormapped_im)
+            # # Saving colormapped depth image
+            # disp_resized_np = disp_resized.squeeze().cpu().numpy()
+            # vmax = np.percentile(disp_resized_np, 95)
+            # normalizer = mpl.colors.Normalize(vmin=disp_resized_np.min(), vmax=vmax)
+            # mapper = cm.ScalarMappable(norm=normalizer, cmap='magma')
+            # colormapped_im = (mapper.to_rgba(disp_resized_np)[:, :, :3] * 255).astype(np.uint8)
+            # im = pil.fromarray(colormapped_im)
 
-            name_dest_im = os.path.join(output_directory, "{}_disp.jpeg".format(output_name))
+            # makes it so that the depth image is not colormapped
+            disp_resized_np = disp_resized.squeeze().cpu().numpy()
+            gray_im = (disp_resized_np*255/disp_resized_np.max()).astype(np.uint8)
+            im = pil.fromarray(gray_im)
+
+            # name_dest_im = os.path.join(output_directory, "{}_disp.jpeg".format(output_name))
+            name_dest_im = os.path.join(output_directory, "{}_depth.jpg".format(output_name))
             im.save(name_dest_im)
 
             print("   Processed {:d} of {:d} images - saved predictions to:".format(
